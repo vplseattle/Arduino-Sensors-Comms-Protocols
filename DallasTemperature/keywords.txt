@@ -1,0 +1,27 @@
+#######################################
+# Syntax Coloring Map For Ultrasound
+#######################################
+
+#######################################
+# Datatypes (KEYWORD1)
+#######################################
+DallasTemperature	KEYWORD1
+OneWire	KEYWORD1
+
+#######################################
+# Methods and Functions (KEYWORD2)
+#######################################
+
+setResolution	KEYWORD2
+getResolution	KEYWORD2
+getTempC	KEYWORD2
+toFahrenheitget	KEYWORD2
+getTempF	KEYWORD2
+getTempCByIndex 	KEYWORD2
+getTempFByIndex	KEYWORD2
+requestTemperatures	KEYWORD2
+isParasitePowerMode	KEYWORD2
+#######################################
+# Constants (LITERAL1)
+#######################################
+
