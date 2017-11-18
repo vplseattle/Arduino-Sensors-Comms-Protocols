@@ -1,0 +1,97 @@
+
+1) Hardware: 
+Connect the MLX90614 (refer to the datasheet) as follows: 
+Pin 1 on MLX (SCC) connect to ANALOG pin 5 on Arduino 
+Pin 2 on MLX (SDA) connect to ANALOG pin 4 on Arduino 
+Pin 3 on MLX (VDD) connect to 3.3V on Arduino 
+Pin 4 on MLX (VSS) connect to GROUND on Arduino 
+
+Now use "pull ups" on the SCC and SDA lines by connecting a 4.7K ohm resistor from the Pin 3 VDD line to the SCC line and a 4.7K ohm resistor from the Pin 3 VDD line to the SDA line. 
+
+2) Software: 
+a) Download the I2c libraries as follows: 
+
+Go to: 
+
+homepage.hispeed.ch/peterfleury/avr-software.html
+
+and download the i2cmaster.zip 
+
+Make a folder in /{arduino root}/hardware/libraries and extract the 
+i2cmaster.h and twimaster.c files. Now rename the .c file of twimaster to .cpp (YES I KNOW IT SOUNDS WIERD BUT RENAME AND MAKE SURE THESE FILES ARE IN THE RIGHT LOCATION I.E. IN THE LIBRARIES FOLDER OF THE ARDUINO CODE) 
+
+Make sure you restart Wiring if you load a new library into it so it can be found when it is called..... 
+
+3) Now you need to modify twimaster.c 
+Open it in a simple text editor and change the following if you are using an Arduino Duemilanove 
+
+Edit the twimaster.c to reflect the 16MHz clock, and change the bus frequency to 50Khz by changing the code at the beginning to: 
+
+#ifndef F_CPU 
+#define F_CPU 16000000UL 
+#endif 
+
+/* I2C clock in Hz */ 
+#define SCL_CLOCK 50000L 
+
+
+4) Now copy Dave Eaton's EXCELLENT code into Wiring. You may have issues with seeing the new libraries or with missing brackets when you verify the code. 
+Dave's fix for the high precision (2 decimal place) thermal read also works well (this sensor is incredibly sensitive). 
+
+This is Dave's code as I used it:
+
+
+#include <i2cmaster.h>
+
+void setup() 
+{ 
+Serial.begin(9600); 
+Serial.println("Hello!"); 
+i2c_init(); //Initialise the i2c bus 
+Serial.println("Return from i2c_init"); 
+PORTC = (1 << PORTC4) | (1 << PORTC5);//enable pullups 
+} 
+void loop() 
+{ 
+int dev = 0x5A<<1; 
+int data_low = 0; 
+int data_high = 0; 
+int pec = 0; 
+i2c_start_wait(dev+I2C_WRITE); 
+i2c_write(0x07); 
+
+
+i2c_rep_start(dev+I2C_READ); 
+data_low = i2c_readAck(); //Read 1 byte and then send ack 
+data_high = i2c_readAck(); //Read 1 byte and then send ack 
+pec = i2c_readNak(); 
+i2c_stop(); 
+
+//This converts high and low bytes together and processes temperature, MSB is a error bit and is ignored for temps 
+double tempFactor = 0.02; // 0.02 degrees per LSB 
+double tempData = 0x0000; 
+int frac; 
+
+// This masks off the error bit of the high byte, then moves it left 8 bits and adds the low byte. 
+tempData = (double)(((data_high & 0x007F) << 8) + data_low); 
+tempData = (tempData * tempFactor)-0.01; 
+tempData = tempData - 273.15; 
+Serial.print((int)tempData); //Print temp in degrees C to serial 
+Serial.print("."); 
+tempData=tempData-(int)tempData; 
+frac=tempData*100; 
+Serial.println(frac); 
+delay(100);  
+}
+
+
+
+Upload the code in the Arduino making sure you are on the correct COM port (obviously). Open the serial port viewer (COM port correct?) and make sure the baud rate corresponds with the the baud rate in the code and you should be able to see the temperatures streaming live from the serial port. 
+
+BTW....Hooking up an Xbee is easy using the standard breakout board and Xbee to USB converter for the PC end of things. Just make sure all of the baud rates are the same (in the code and in the Xbee based on the setup in the XCTU program from Digi). 
+
+
+Thanks to Dave Eaton for making a fun afternoon successful, CalculusAE for a great trail of technical breadcrumbs and Peter Fleury for posting the libraries. 
+
+
+Now....how does one get more than one MLX sensor to work on this two wire inter face? I assume the wiring is simply in parallel. How can I identify and call out different MLX sensors in the code?
